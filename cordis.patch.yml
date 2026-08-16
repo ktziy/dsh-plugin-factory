@@ -1,0 +1,4 @@
+# bundle patch：安装后把本包插件接入组合（insert 追加新行）。
+- insert:
+    - id: plugin-factory
+      name: dsh-plugin-factory

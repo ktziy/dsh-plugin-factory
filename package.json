@@ -1,0 +1,29 @@
+{
+  "name": "dsh-plugin-factory",
+  "version": "0.1.2",
+  "description": "In-dsh plugin factory: scaffold, document, and validate DeepSeek Harness plugins from inside an agent session.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "docs",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "license": "MIT"
+}
