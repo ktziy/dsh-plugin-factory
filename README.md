@@ -88,6 +88,20 @@ Agent 调用 plugin_doc 读取契约规范
 > 待补充：`docs/` 
 ---
 
+## ✨ 开发进度
+
+| 侧 | 类型 | 官方文档 | 我们完成度 |
+|---|---|---|---|
+| **Host 侧**<br>（Node · Agent 功能扩展） | Tool 工具 | `develop/basic/tool` + `cookbook/adding-a-tool` | ✅ 完整闭环（文档 + 脚手架 + 校验） |
+| | Service 服务 | `develop/framework/service` | ⚠️ 文档已覆盖（`services-events.md`），无脚手架 |
+| | 事件监听/拦截 | `develop/framework/events` | ⚠️ 文档已覆盖（`services-events.md`），无脚手架 |
+| | 配置 | `develop/basic/config` | ⚠️ 文档已覆盖（`CORE.md §6` + `compose-publish.md`），scaffold 带 Config 示例 |
+| | LLM 适配器 | `develop/practice/llm-adapter` + `cookbook/adding-an-llm-adapter` | ⚠️ 文档已覆盖（`llm-adapter.md`），无脚手架 |
+| | 打包/发布 | `develop/basic/publish` | ✅ 文档已覆盖（`compose-publish.md`），且已有的包就是 bundle |
+| **Client 侧**<br>（浏览器 · Web UI 扩展） | 对话节点 UI | `cookbook/adding-a-conversation-node` | ❌ 完全未做 |
+| | Client 包 | `cookbook/adding-a-package` | ❌ 完全未做 |
+
+---
 ## 📄 License
 
 MIT © [ktziy](https://github.com/ktziy)
