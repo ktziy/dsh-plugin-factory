@@ -102,3 +102,48 @@ export function validatePlugin(input: ValidateInput): ValidateOutput {
 
   return { ok: issues.every(i => i.severity !== 'error'), issues }
 }
+
+/**
+ * 校验 client（前端 UI）插件半（src/client/index.ts）的静态契约。
+ * 硬校验最终以 client modules 扫描 + web bundle 加载为准；这里抓最常踩的致命错误。
+ */
+export function validateClientPlugin(input: ValidateInput): ValidateOutput {
+  const src = input.source ?? ''
+  const issues: ValidateIssue[] = []
+
+  // 1. client 半必须有 apply 函数
+  if (!/function\s+apply\s*\(/.test(src) && !/apply\s*\(/.test(src)) {
+    issues.push({
+      rule: 'client-apply',
+      severity: 'error',
+      detail: 'client 半必须导出 `apply(ctx: ClientContext)`，浏览器半加载时调用它挂载 UI。',
+    })
+  }
+
+  // 2. 用了 slots 必须声明 inject（slots 服务键）
+  if (/ctx\.slots\.(inject|register)/.test(src) && !/export\s+const\s+inject\s*=/.test(src)) {
+    issues.push({
+      rule: 'client-inject',
+      severity: 'error',
+      detail: '用了 `ctx.slots.*` 但没 `export const inject = [\'slots\']`。依赖未声明会导致 apply 里 ctx.slots 不可用。',
+    })
+  }
+
+  // 3. client 半是 React 组件面，提醒纯函数与副作用约束
+  if (/ctx\.slots\.register/.test(src)) {
+    issues.push({
+      rule: 'client-slots',
+      severity: 'warning',
+      detail: '挂载的 React 组件里不要用 setInterval 等副作用（渲染失败只落到浏览器控制台，模型和用户都看不到）。',
+    })
+  }
+
+  // 4. 通用免责
+  issues.push({
+    rule: 'client-authority',
+    severity: 'warning',
+    detail: '静态检查不保证完整；最终以 client modules 扫描（dsh.client 声明 + exports["./client"]）和 web bundle 加载为准。详见 plugin_doc(topic=\'client\') §5/§7。',
+  })
+
+  return { ok: issues.every(i => i.severity !== 'error'), issues }
+}

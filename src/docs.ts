@@ -10,6 +10,7 @@ export const DOC_TOPICS = {
   llm: { file: 'llm-adapter.md', label: 'LLM 适配器' },
   compose: { file: 'compose-publish.md', label: '组合/打包/安装/发布' },
   preset: { file: 'preset.md', label: 'agent preset' },
+  client: { file: 'client.md', label: '前端 UI 插件（client 侧）' },
 } as const
 
 export type DocTopic = keyof typeof DOC_TOPICS

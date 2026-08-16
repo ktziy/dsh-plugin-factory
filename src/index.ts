@@ -4,9 +4,12 @@
 //   plugin_validate 对源码做禁止清单静态自查
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { readDoc, topicLabel, type DocTopic } from './docs.js'
-import { scaffoldPlugin } from './scaffold.js'
-import { validatePlugin } from './validate.js'
+import { readDoc, type DocTopic } from './docs.js'
+import {
+  scaffoldPlugin, scaffoldClientPlugin, scaffoldServicePlugin, scaffoldEventPlugin,
+  scaffoldLlmAdapterPlugin, scaffoldConversationNodePlugin,
+} from './scaffold.js'
+import { validatePlugin, validateClientPlugin } from './validate.js'
 
 export const name = 'plugin-factory'
 export const inject = ['tools']
@@ -18,12 +21,12 @@ export function apply(ctx: Context) {
     description: 'Read the DeepSeek Harness plugin-development contract docs (packaged with this plugin). '
       + 'Use it to look up the authoritative API contract before writing plugin code. '
       + "topics: core (required core contract), tools (defineTool + schema rules), services (services/events), "
-      + 'llm (LLM adapter), compose (compose/publish/install), preset (agent preset).',
+      + 'llm (LLM adapter), compose (compose/publish/install), preset (agent preset), client (Web UI plugins).',
     parameters: {
       topic: {
         type: 'string',
         required: true,
-        enum: ['core', 'tools', 'services', 'llm', 'compose', 'preset'],
+        enum: ['core', 'tools', 'services', 'llm', 'compose', 'preset', 'client'],
         description: 'Which doc to read',
       },
     },
@@ -39,41 +42,86 @@ export function apply(ctx: Context) {
   // 2. 脚手架
   ctx.tools.register(defineTool({
     name: 'plugin_scaffold',
-    description: 'Generate a valid DeepSeek Harness tool-plugin skeleton (source + patch snippet). '
-      + 'Returns a guaranteed-loadable minimal plugin; the agent fills in the real logic and any '
-      + 'complex parameter schema afterwards (read plugin_doc topic=tools for the schema rules first).',
+    description: 'Generate a DeepSeek Harness plugin skeleton. '
+      + 'kind=tool: host tool plugin (defineTool). kind=service: host Service class. kind=event: host event listener. '
+      + 'kind=llm-adapter: host LLM adapter. kind=client: Web UI plugin (settings.section slot). '
+      + 'kind=client-node: Web UI conversation node. Returns files to write plus next-step hints.',
     parameters: {
-      name: { type: 'string', required: true, description: 'Plugin name (snake/kebab), e.g. weather-tool' },
-      toolName: { type: 'string', required: true, description: 'Tool name (snake_case), e.g. get_weather' },
-      description: { type: 'string', required: true, description: 'What the tool does and when to use it (the model reads this)' },
-      paramName: { type: 'string', description: 'Name of the first (string) parameter, default "input"' },
+      kind: { type: 'string', enum: ['tool', 'service', 'event', 'llm-adapter', 'client', 'client-node'], description: 'Which plugin kind to scaffold (default tool)' },
+      name: { type: 'string', required: true, description: 'Plugin/package name (kebab), e.g. weather-tool' },
+      toolName: { type: 'string', description: '(tool) Tool name snake_case' },
+      description: { type: 'string', description: '(tool) Tool description the model reads' },
+      paramName: { type: 'string', description: '(tool) First string parameter name' },
+      serviceName: { type: 'string', description: '(service) Service name mounted on ctx, e.g. metrics' },
+      eventName: { type: 'string', description: '(event) Event name to listen, e.g. tools/result' },
+      eventDesc: { type: 'string', description: '(event) What the listener does' },
+      adapterClass: { type: 'string', description: '(llm-adapter) Adapter class name, e.g. MyProviderAdapter' },
+      providerName: { type: 'string', description: '(llm-adapter) Provider route name, e.g. my-provider' },
+      sectionId: { type: 'string', description: '(client) Settings section id (kebab)' },
+      sectionLabel: { type: 'string', description: '(client) Settings section nav label' },
+      nodeKind: { type: 'string', description: '(client-node) Node kind (kebab), e.g. review-job' },
+      nodeLabel: { type: 'string', description: '(client-node) Node display label' },
     },
     output: {
       schema: {
         type: 'object',
         additionalProperties: false,
         properties: {
-          source: { type: 'string' },
-          patch: { type: 'string' },
+          files: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                path: { type: 'string' },
+                content: { type: 'string' },
+              },
+            },
+          },
           hint: { type: 'string' },
         },
       },
-      render: (_args, value) => [
-        { type: 'text', text: `// ===== ${_args.name}.ts =====\n${value.source}\n\n// ===== patch (--patch) =====\n${value.patch}\n\n${value.hint}` },
-      ],
+      render: (_args, value) => {
+        const files = value.files ?? []
+        const body = files.map(f => `// ===== ${f.path} =====\n${f.content}`).join('\n\n')
+        return [{ type: 'text', text: `${body}\n\n${value.hint ?? ''}` }]
+      },
     },
     async execute(args) {
-      return scaffoldPlugin(args)
+      switch (args.kind) {
+        case 'service':
+          return scaffoldServicePlugin({ name: args.name, serviceName: args.serviceName ?? '' })
+        case 'event':
+          return scaffoldEventPlugin({ name: args.name, eventName: args.eventName ?? '', eventDesc: args.eventDesc ?? '' })
+        case 'llm-adapter':
+          return scaffoldLlmAdapterPlugin({ name: args.name, adapterClass: args.adapterClass ?? '', providerName: args.providerName ?? '' })
+        case 'client':
+          return scaffoldClientPlugin({ name: args.name, sectionId: args.sectionId ?? '', sectionLabel: args.sectionLabel ?? '' })
+        case 'client-node':
+          return scaffoldConversationNodePlugin({ name: args.name, nodeKind: args.nodeKind ?? '', nodeLabel: args.nodeLabel ?? '' })
+        default: {
+          const tool = scaffoldPlugin({ name: args.name, toolName: args.toolName ?? '', description: args.description ?? '', paramName: args.paramName })
+          return {
+            files: [
+              { path: `${args.name}.ts`, content: tool.source },
+              { path: `${args.name}.patch.yml`, content: tool.patch },
+            ],
+            hint: tool.hint,
+          }
+        }
+      }
     },
   }))
 
   // 3. 静态校验
   ctx.tools.register(defineTool({
     name: 'plugin_validate',
-    description: 'Statically check plugin source against the defineTool guard rules (missing name/apply/inject, '
-      + 'output schema/render, object additionalProperties, oneOf size). '
+    description: 'Statically check plugin source against the guard rules. '
+      + 'kind=tool: defineTool host rules (missing name/apply/inject, output schema/render, object additionalProperties, oneOf size). '
+      + 'kind=client: client-side UI rules (apply/inject, slots usage). '
       + 'Not a full substitute for the real guard at load time — final authority is dsh loading the plugin.',
     parameters: {
+      kind: { type: 'string', enum: ['tool', 'client'], description: 'Which plugin kind to validate (default tool)' },
       source: { type: 'string', required: true, description: 'The plugin TypeScript source text' },
       pluginName: { type: 'string', description: 'Optional plugin name for the report header' },
     },
@@ -109,7 +157,7 @@ export function apply(ctx: Context) {
       },
     },
     async execute(args) {
-      return validatePlugin(args)
+      return args.kind === 'client' ? validateClientPlugin(args) : validatePlugin(args)
     },
   }))
 }
