@@ -16,7 +16,7 @@
 
 ```bash
 # 方式一：tarball（推荐，免构建）
-dsh plugin --profile web add ./dsh-plugin-factory-0.1.2.tgz
+dsh plugin --profile web add ./dsh-plugin-factory-0.3.0.tgz
 
 # 方式二：Git 仓库
 dsh plugin --profile web add github:ktziy/dsh-plugin-factory
@@ -57,9 +57,9 @@ dsh 插件开发有一套**严格的契约规范**：
 
 | 工具 | 功能说明 |
 |------|----------|
-| `plugin_doc` | 按主题读取开发契约文档（支持 core / tools / services / llm / compose / preset） |
-| `plugin_scaffold` | 生成合法的 Tool 插件骨架源码，并附带 `--patch` 安装片段 |
-| `plugin_validate` | 基于 `defineTool` 守卫规则进行静态自查（含复杂 Schema 禁止清单） |
+| `plugin_doc` | 按主题读取开发契约文档（core / tools / services / llm / compose / preset / client） |
+| `plugin_scaffold` | 生成插件骨架，支持 6 种 kind：tool / service / event / llm-adapter / client / client-node |
+| `plugin_validate` | 基于守卫规则静态自查（tool 的 defineTool 规则 + client 的 apply/inject/slots） |
 
 ---
 
@@ -90,16 +90,30 @@ Agent 调用 plugin_doc 读取契约规范
 
 ## ✨ 开发进度
 
-| 侧 | 类型 | 官方文档 | 我们完成度 |
-|---|---|---|---|
-| **Host 侧**<br>（Node · Agent 功能扩展） | Tool 工具 | `develop/basic/tool` + `cookbook/adding-a-tool` | ✅ 完整闭环（文档 + 脚手架 + 校验） |
-| | Service 服务 | `develop/framework/service` | ⚠️ 文档已覆盖（`services-events.md`），无脚手架 |
-| | 事件监听/拦截 | `develop/framework/events` | ⚠️ 文档已覆盖（`services-events.md`），无脚手架 |
-| | 配置 | `develop/basic/config` | ⚠️ 文档已覆盖（`CORE.md §6` + `compose-publish.md`），scaffold 带 Config 示例 |
-| | LLM 适配器 | `develop/practice/llm-adapter` + `cookbook/adding-an-llm-adapter` | ⚠️ 文档已覆盖（`llm-adapter.md`），无脚手架 |
-| | 打包/发布 | `develop/basic/publish` | ✅ 文档已覆盖（`compose-publish.md`），且已有的包就是 bundle |
-| **Client 侧**<br>（浏览器 · Web UI 扩展） | 对话节点 UI | `cookbook/adding-a-conversation-node` | ❌ 完全未做 |
-| | Client 包 | `cookbook/adding-a-package` | ❌ 完全未做 |
+| 侧 | 类型 | 完成度 |
+|---|---|---|
+| **Host 侧** | Tool 工具 | ✅ 文档 + 脚手架 + 校验 |
+| | Service 服务 | ✅ 新增脚手架（Service 类 + declare module） |
+| | 事件监听/拦截 | ✅ 新增脚手架（ctx.on + 分发模式提示） |
+| | 配置 | ✅ 文档 + scaffold 带 Config 示例 |
+| | LLM 适配器 | ✅ 新增脚手架（LlmAdapter + StreamChunk 协议） |
+| | 打包/发布 | ✅ 文档 + 包本身是 bundle |
+| **Client 侧** | Client UI 插件（settings.section） | ✅ 文档 + 脚手架 + 校验 + 构建 + 挂载实测 |
+| | 对话节点 UI | ✅ 新增脚手架（ConversationNodeDefinition 全套） |
+| | 其他槽位 | ✅ 文档覆盖（client.md §3 完整清单）+ 两个代表模板 |
+
+**plugin_scaffold 现在支持 6 种 kind：**
+
+| kind | 说明 |
+|---|---|
+| `tool` | Host 工具（defineTool） |
+| `service` | Host Service 类 |
+| `event` | Host 事件监听 |
+| `llm-adapter` | Host LLM 适配器 |
+| `client` | Web UI 插件（settings.section 槽位） |
+| `client-node` | Web UI 对话节点 |
+
+✅ 无模型自测 6 种全部通过，编译通过，打包 29KB。
 
 ---
 ## 📄 License
