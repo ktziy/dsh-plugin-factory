@@ -1,7 +1,7 @@
-// docs.ts — 读取打包的拆分文档。docs/ 与 src/、lib/ 都只隔一层，`..` 统一指向包根。
+// docs.ts — 读取打包的文档（手写契约 + 官方结构化参考 + 官方原文）。
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 
 export const DOC_TOPICS = {
   core: { file: 'CORE.md', label: '核心契约（必读）' },
@@ -25,6 +25,20 @@ export async function readDoc(topic: DocTopic): Promise<string> {
     throw new Error(`unknown topic "${topic}"; available: ${keys}`)
   }
   return readFile(join(docsDir, entry.file), 'utf8')
+}
+
+/**
+ * 按 docs/ 内相对路径读取任意打包文档（结构化 ref/ 或官方原文 official/）。
+ * 白名单约束：解析后的路径必须落在 docsDir 内，防止路径穿越。
+ * @param relPath - 相对 docs/ 的路径，如 'ref/shell.md'、'official/develop/basic/tool.md'
+ */
+export async function readDocFile(relPath: string): Promise<string> {
+  const target = resolve(docsDir, relPath)
+  const root = resolve(docsDir)
+  if (target !== root && !target.startsWith(root + sep)) {
+    throw new Error(`plugin_doc: path escapes the packaged docs root: ${relPath}`)
+  }
+  return readFile(target, 'utf8')
 }
 
 export function topicLabel(topic: DocTopic): string {

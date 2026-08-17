@@ -4,7 +4,7 @@
 //   plugin_validate 对源码做禁止清单静态自查
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { readDoc, type DocTopic } from './docs.js'
+import { readDoc, readDocFile, type DocTopic } from './docs.js'
 import {
   scaffoldPlugin, scaffoldClientPlugin, scaffoldServicePlugin, scaffoldEventPlugin,
   scaffoldLlmAdapterPlugin, scaffoldConversationNodePlugin,
@@ -22,13 +22,20 @@ export function apply(ctx: Context) {
       + 'Use it to look up the authoritative API contract before writing plugin code. '
       + "topics: core (required core contract), tools (defineTool + schema rules), services (services/events), "
       + 'llm (LLM adapter), compose (compose/publish/install), preset (agent preset), client (Web UI plugins), '
-      + 'api (official reference index: where to look up every ctx service/event).',
+      + 'api (official reference index). '
+      + 'For any subsystem/API detail, pass `file` instead: structured refs live at ref/<subsystem>.md '
+      + '(e.g. ref/shell.md, ref/session.md, ref/client-modules.md); official original docs live under '
+      + 'official/ (e.g. official/develop/basic/tool.md, official/cordis-api/context.md, '
+      + 'official/cookbook/adding-a-tool.md, official/concepts/architecture.md).',
     parameters: {
       topic: {
         type: 'string',
-        required: true,
         enum: ['core', 'tools', 'services', 'llm', 'compose', 'preset', 'client', 'api'],
-        description: 'Which doc to read',
+        description: 'Which curated doc to read (omit when using file)',
+      },
+      file: {
+        type: 'string',
+        description: 'Packaged doc path under docs/ (e.g. ref/shell.md, official/develop/basic/tool.md). Use instead of topic for subsystem/API detail.',
       },
     },
     output: {
@@ -36,7 +43,9 @@ export function apply(ctx: Context) {
       render: (_args, value) => [{ type: 'text', text: value }],
     },
     async execute(args) {
-      return readDoc(args.topic as DocTopic)
+      if (args.file) return readDocFile(args.file)
+      if (args.topic) return readDoc(args.topic as DocTopic)
+      throw new Error('plugin_doc: provide either topic or file')
     },
   }))
 
