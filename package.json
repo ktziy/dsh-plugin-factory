@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-factory",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "In-dsh plugin factory: scaffold, document, and validate DeepSeek Harness plugins (host tools AND client UI) from inside an agent session.",
   "type": "module",
   "main": "lib/index.js",

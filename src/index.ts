@@ -21,12 +21,13 @@ export function apply(ctx: Context) {
     description: 'Read the DeepSeek Harness plugin-development contract docs (packaged with this plugin). '
       + 'Use it to look up the authoritative API contract before writing plugin code. '
       + "topics: core (required core contract), tools (defineTool + schema rules), services (services/events), "
-      + 'llm (LLM adapter), compose (compose/publish/install), preset (agent preset), client (Web UI plugins).',
+      + 'llm (LLM adapter), compose (compose/publish/install), preset (agent preset), client (Web UI plugins), '
+      + 'api (official reference index: where to look up every ctx service/event).',
     parameters: {
       topic: {
         type: 'string',
         required: true,
-        enum: ['core', 'tools', 'services', 'llm', 'compose', 'preset', 'client'],
+        enum: ['core', 'tools', 'services', 'llm', 'compose', 'preset', 'client', 'api'],
         description: 'Which doc to read',
       },
     },
